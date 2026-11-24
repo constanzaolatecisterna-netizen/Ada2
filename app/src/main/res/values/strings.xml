@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">ADA Alianza</string>
+    <string name="auth_title">ADA Alianza</string>
+    <string name="auth_subtitle">Asistente familiar inteligente con voz fluida, rutinas, calma y red sincronizada.</string>
+    <string name="auth_google_button">Continuar con Google</string>
+    <string name="auth_signing_in">Conectando tu cuenta...</string>
+    <string name="auth_error_prefix">No se pudo iniciar sesión: %1$s</string>
+    <string name="status_online">En línea</string>
+    <string name="status_listening">Escuchando tu voz...</string>
+    <string name="status_thinking_ada">ADA está pensando...</string>
+    <string name="status_speaking_ada">ADA hablando...</string>
+    <string name="status_calm">Modo calma activo</string>
+    <string name="status_alert">Recordatorio activo</string>
+    <string name="tab_alianza">Alianza</string>
+    <string name="tab_push">Alertas</string>
+    <string name="tab_rutinas">Rutinas</string>
+    <string name="tab_calma">Calma/Red</string>
+    <string name="notification_channel_reminders_name">Recordatorios ADA</string>
+    <string name="notification_channel_reminders_desc">Avisos y recordatorios programados por voz</string>
+    <string name="notification_channel_floating_name">ADA Flotante</string>
+    <string name="notification_channel_floating_desc">Burbuja flotante de ADA para escuchar "ADA" y leer mensajes o notificaciones</string>
+    <string name="widget_name">ADA Alianza Flotante</string>
+    <string name="widget_description">Acceso rápido al orbe ADA para hablar, activar ADA flotante y leer mensajes o notificaciones.</string>
+    <string name="status_wake_armed">Esperando "ADA" (anti-ruido)</string>
+</resources>

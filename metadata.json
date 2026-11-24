@@ -1,0 +1,6 @@
+{
+  "name": "ADA Alianza",
+  "description": "Asistente virtual inteligente familiar con orbe interactivo, voz fluida, rutinas, calma y red sincronizada de Alianza.",
+  "requestFramePermissions": ["microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

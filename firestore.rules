@@ -1,0 +1,322 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidUserNetworkConfig(data, userId) {
+      return data.keys().hasAll(['uid', 'networkCode', 'activeProfileId', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'networkCode', 'activeProfileId', 'updatedAt']) &&
+        data.uid is string &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.networkCode is string &&
+        data.networkCode.size() >= 1 &&
+        data.networkCode.size() <= 40 &&
+        data.activeProfileId is string &&
+        isValidId(data.activeProfileId) &&
+        data.updatedAt is timestamp &&
+        data.updatedAt <= request.time;
+    }
+
+    function isValidFamilyProfile(data, userId) {
+      return data.keys().hasAll(['ownerUid', 'name', 'role', 'colorHex', 'persona', 'availability', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerUid', 'name', 'role', 'colorHex', 'persona', 'availability', 'createdAt', 'updatedAt']) &&
+        data.ownerUid is string &&
+        isValidId(data.ownerUid) &&
+        data.ownerUid == userId &&
+        data.name is string &&
+        data.name.size() >= 1 &&
+        data.name.size() <= 60 &&
+        data.role is string &&
+        data.role.size() >= 1 &&
+        data.role.size() <= 60 &&
+        data.colorHex is string &&
+        data.colorHex.size() >= 4 &&
+        data.colorHex.size() <= 9 &&
+        data.persona in ['ada', 'jarvis'] &&
+        data.availability in ['Disponible', 'Ocupado', 'Estudiando', 'Descansando', 'En silencio'] &&
+        data.createdAt is timestamp &&
+        data.createdAt <= request.time &&
+        data.updatedAt is timestamp &&
+        data.updatedAt <= request.time;
+    }
+
+    function isValidRoutineItem(data, userId) {
+      return data.keys().hasAll(['ownerUid', 'profileId', 'text', 'done', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerUid', 'profileId', 'text', 'done', 'createdAt', 'updatedAt']) &&
+        data.ownerUid is string &&
+        isValidId(data.ownerUid) &&
+        data.ownerUid == userId &&
+        data.profileId is string &&
+        isValidId(data.profileId) &&
+        data.text is string &&
+        data.text.size() >= 1 &&
+        data.text.size() <= 200 &&
+        data.done is bool &&
+        data.createdAt is timestamp &&
+        data.createdAt <= request.time &&
+        data.updatedAt is timestamp &&
+        data.updatedAt <= request.time;
+    }
+
+    function isValidReminderItem(data, userId) {
+      return data.keys().hasAll(['ownerUid', 'profileId', 'time', 'text', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerUid', 'profileId', 'time', 'text', 'createdAt', 'updatedAt']) &&
+        data.ownerUid is string &&
+        isValidId(data.ownerUid) &&
+        data.ownerUid == userId &&
+        data.profileId is string &&
+        isValidId(data.profileId) &&
+        data.time is string &&
+        data.time.size() >= 4 &&
+        data.time.size() <= 10 &&
+        data.text is string &&
+        data.text.size() >= 1 &&
+        data.text.size() <= 200 &&
+        data.createdAt is timestamp &&
+        data.createdAt <= request.time &&
+        data.updatedAt is timestamp &&
+        data.updatedAt <= request.time;
+    }
+
+    function isValidContactItem(data, userId) {
+      return data.keys().hasAll(['ownerUid', 'profileId', 'alias', 'phone', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerUid', 'profileId', 'alias', 'phone', 'createdAt', 'updatedAt']) &&
+        data.ownerUid is string &&
+        isValidId(data.ownerUid) &&
+        data.ownerUid == userId &&
+        data.profileId is string &&
+        isValidId(data.profileId) &&
+        data.alias is string &&
+        data.alias.size() >= 1 &&
+        data.alias.size() <= 60 &&
+        data.phone is string &&
+        data.phone.size() <= 32 &&
+        data.createdAt is timestamp &&
+        data.createdAt <= request.time &&
+        data.updatedAt is timestamp &&
+        data.updatedAt <= request.time;
+    }
+
+    function isValidAllianceMessage(data, userId) {
+      return data.keys().hasAll(['ownerUid', 'fromName', 'toName', 'text', 'time', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerUid', 'fromName', 'toName', 'text', 'time', 'status', 'createdAt', 'updatedAt']) &&
+        data.ownerUid is string &&
+        isValidId(data.ownerUid) &&
+        data.ownerUid == userId &&
+        data.fromName is string &&
+        data.fromName.size() >= 1 &&
+        data.fromName.size() <= 60 &&
+        data.toName is string &&
+        data.toName.size() >= 1 &&
+        data.toName.size() <= 60 &&
+        data.text is string &&
+        data.text.size() >= 1 &&
+        data.text.size() <= 500 &&
+        data.time is string &&
+        data.time.size() >= 1 &&
+        data.time.size() <= 16 &&
+        data.status in ['Entregado', 'Leído', 'Automático'] &&
+        data.createdAt is timestamp &&
+        data.createdAt <= request.time &&
+        data.updatedAt is timestamp &&
+        data.updatedAt <= request.time;
+    }
+
+    function isValidAllianceRule(data, userId) {
+      return data.keys().hasAll(['ownerUid', 'trigger', 'targetProfileId', 'text', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerUid', 'trigger', 'targetProfileId', 'text', 'createdAt', 'updatedAt']) &&
+        data.ownerUid is string &&
+        isValidId(data.ownerUid) &&
+        data.ownerUid == userId &&
+        data.trigger in ['routine_done', 'calm_started', 'status_busy'] &&
+        data.targetProfileId is string &&
+        isValidId(data.targetProfileId) &&
+        data.text is string &&
+        data.text.size() >= 1 &&
+        data.text.size() <= 300 &&
+        data.createdAt is timestamp &&
+        data.createdAt <= request.time &&
+        data.updatedAt is timestamp &&
+        data.updatedAt <= request.time;
+    }
+
+    function isValidPushAlert(data, userId) {
+      return data.keys().hasAll(['ownerUid', 'app', 'text', 'time', 'source', 'createdAt']) &&
+        data.keys().hasOnly(['ownerUid', 'app', 'text', 'time', 'source', 'createdAt']) &&
+        data.ownerUid is string &&
+        isValidId(data.ownerUid) &&
+        data.ownerUid == userId &&
+        data.app is string &&
+        data.app.size() >= 1 &&
+        data.app.size() <= 40 &&
+        data.text is string &&
+        data.text.size() >= 1 &&
+        data.text.size() <= 400 &&
+        data.time is string &&
+        data.time.size() >= 1 &&
+        data.time.size() <= 16 &&
+        data.source in ['fcm', 'webhook', 'native', 'clipboard'] &&
+        data.createdAt is timestamp &&
+        data.createdAt <= request.time;
+    }
+
+    function isValidWebhookEndpoint(data, userId) {
+      return data.keys().hasAll(['ownerUid', 'name', 'url', 'active', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerUid', 'name', 'url', 'active', 'createdAt', 'updatedAt']) &&
+        data.ownerUid is string &&
+        isValidId(data.ownerUid) &&
+        data.ownerUid == userId &&
+        data.name is string &&
+        data.name.size() >= 1 &&
+        data.name.size() <= 80 &&
+        data.url is string &&
+        data.url.size() >= 8 &&
+        data.url.size() <= 512 &&
+        data.url.matches('^https?://.*') &&
+        data.active is bool &&
+        data.createdAt is timestamp &&
+        data.createdAt <= request.time &&
+        data.updatedAt is timestamp &&
+        data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isValidId(userId) && isOwner(userId) && isValidUserNetworkConfig(incoming(), userId);
+      allow update: if isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserNetworkConfig(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['networkCode', 'activeProfileId', 'updatedAt']);
+      allow delete: if isValidId(userId) && isOwner(userId);
+
+      match /profiles/{profileId} {
+        allow get: if isValidId(userId) && isValidId(profileId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(profileId) && isOwner(userId) && isValidFamilyProfile(incoming(), userId);
+        allow update: if isValidId(userId) &&
+          isValidId(profileId) &&
+          isOwner(userId) &&
+          isValidFamilyProfile(incoming(), userId) &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'role', 'colorHex', 'persona', 'availability', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(profileId) && isOwner(userId);
+      }
+
+      match /routines/{routineId} {
+        allow get: if isValidId(userId) && isValidId(routineId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(routineId) && isOwner(userId) && isValidRoutineItem(incoming(), userId);
+        allow update: if isValidId(userId) &&
+          isValidId(routineId) &&
+          isOwner(userId) &&
+          isValidRoutineItem(incoming(), userId) &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().profileId == existing().profileId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['done', 'text', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(routineId) && isOwner(userId);
+      }
+
+      match /reminders/{reminderId} {
+        allow get: if isValidId(userId) && isValidId(reminderId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(reminderId) && isOwner(userId) && isValidReminderItem(incoming(), userId);
+        allow update: if isValidId(userId) &&
+          isValidId(reminderId) &&
+          isOwner(userId) &&
+          isValidReminderItem(incoming(), userId) &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().profileId == existing().profileId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['time', 'text', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(reminderId) && isOwner(userId);
+      }
+
+      match /contacts/{contactId} {
+        allow get: if isValidId(userId) && isValidId(contactId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(contactId) && isOwner(userId) && isValidContactItem(incoming(), userId);
+        allow update: if isValidId(userId) &&
+          isValidId(contactId) &&
+          isOwner(userId) &&
+          isValidContactItem(incoming(), userId) &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().profileId == existing().profileId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['alias', 'phone', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(contactId) && isOwner(userId);
+      }
+
+      match /messages/{messageId} {
+        allow get: if isValidId(userId) && isValidId(messageId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(messageId) && isOwner(userId) && isValidAllianceMessage(incoming(), userId);
+        allow update: if isValidId(userId) &&
+          isValidId(messageId) &&
+          isOwner(userId) &&
+          isValidAllianceMessage(incoming(), userId) &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(messageId) && isOwner(userId);
+      }
+
+      match /rules/{ruleId} {
+        allow get: if isValidId(userId) && isValidId(ruleId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(ruleId) && isOwner(userId) && isValidAllianceRule(incoming(), userId);
+        allow update: if false;
+        allow delete: if isValidId(userId) && isValidId(ruleId) && isOwner(userId);
+      }
+
+      match /alerts/{alertId} {
+        allow get: if isValidId(userId) && isValidId(alertId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(alertId) && isOwner(userId) && isValidPushAlert(incoming(), userId);
+        allow update: if false;
+        allow delete: if isValidId(userId) && isValidId(alertId) && isOwner(userId);
+      }
+
+      match /webhooks/{webhookId} {
+        allow get: if isValidId(userId) && isValidId(webhookId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(userId) && isValidId(webhookId) && isOwner(userId) && isValidWebhookEndpoint(incoming(), userId);
+        allow update: if isValidId(userId) &&
+          isValidId(webhookId) &&
+          isOwner(userId) &&
+          isValidWebhookEndpoint(incoming(), userId) &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['active', 'name', 'url', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(webhookId) && isOwner(userId);
+      }
+    }
+  }
+}

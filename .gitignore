@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-ssr
+*.local
+.env
+*-debug.log
+.gradle
+app/build
+build
+local.properties

@@ -1,0 +1,186 @@
+{
+  "entities": {
+    "UserNetworkConfig": {
+      "title": "UserNetworkConfig",
+      "description": "User Alliance network code and active profile selection.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Authenticated user UID."
+        },
+        "networkCode": {
+          "type": "string",
+          "description": "Family Alliance network identifier code."
+        },
+        "activeProfileId": {
+          "type": "string",
+          "description": "Currently selected family profile document ID."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["uid", "networkCode", "activeProfileId", "updatedAt"]
+    },
+    "FamilyProfile": {
+      "title": "FamilyProfile",
+      "description": "A family member profile in the Alliance network.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "colorHex": { "type": "string" },
+        "persona": { "type": "string", "enum": ["ada", "jarvis"] },
+        "availability": {
+          "type": "string",
+          "enum": ["Disponible", "Ocupado", "Estudiando", "Descansando", "En silencio"]
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "name", "role", "colorHex", "persona", "availability", "createdAt", "updatedAt"]
+    },
+    "RoutineItem": {
+      "title": "RoutineItem",
+      "description": "Daily routine or medication checklist item scoped to a profile.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "profileId": { "type": "string" },
+        "text": { "type": "string" },
+        "done": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "profileId", "text", "done", "createdAt", "updatedAt"]
+    },
+    "ReminderItem": {
+      "title": "ReminderItem",
+      "description": "Scheduled voice reminder scoped to a profile.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "profileId": { "type": "string" },
+        "time": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "profileId", "time", "text", "createdAt", "updatedAt"]
+    },
+    "ContactItem": {
+      "title": "ContactItem",
+      "description": "Quick call/WhatsApp contact scoped to a profile.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "profileId": { "type": "string" },
+        "alias": { "type": "string" },
+        "phone": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "profileId", "alias", "phone", "createdAt", "updatedAt"]
+    },
+    "AllianceMessage": {
+      "title": "AllianceMessage",
+      "description": "Message sent across the Family Alliance network.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "fromName": { "type": "string" },
+        "toName": { "type": "string" },
+        "text": { "type": "string" },
+        "time": { "type": "string" },
+        "status": { "type": "string", "enum": ["Entregado", "Leído", "Automático"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "fromName", "toName", "text", "time", "status", "createdAt", "updatedAt"]
+    },
+    "AllianceRule": {
+      "title": "AllianceRule",
+      "description": "Cross-profile automatic trigger rule.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "trigger": { "type": "string", "enum": ["routine_done", "calm_started", "status_busy"] },
+        "targetProfileId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "trigger", "targetProfileId", "text", "createdAt", "updatedAt"]
+    },
+    "PushAlert": {
+      "title": "PushAlert",
+      "description": "Captured device or webhook notification alert.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "app": { "type": "string" },
+        "text": { "type": "string" },
+        "time": { "type": "string" },
+        "source": { "type": "string", "enum": ["fcm", "webhook", "native", "clipboard"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "app", "text", "time", "source", "createdAt"]
+    },
+    "PushWebhookEndpoint": {
+      "title": "PushWebhookEndpoint",
+      "description": "External webhook endpoint registered by the user.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "name", "url", "active", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserNetworkConfig" },
+      "description": "Per-user Alliance network configuration."
+    },
+    "/users/{userId}/profiles/{profileId}": {
+      "schema": { "$ref": "#/entities/FamilyProfile" },
+      "description": "Family member profiles for the user."
+    },
+    "/users/{userId}/routines/{routineId}": {
+      "schema": { "$ref": "#/entities/RoutineItem" },
+      "description": "Daily routines scoped to the user."
+    },
+    "/users/{userId}/reminders/{reminderId}": {
+      "schema": { "$ref": "#/entities/ReminderItem" },
+      "description": "Scheduled voice reminders scoped to the user."
+    },
+    "/users/{userId}/contacts/{contactId}": {
+      "schema": { "$ref": "#/entities/ContactItem" },
+      "description": "Quick dial/WhatsApp contacts scoped to the user."
+    },
+    "/users/{userId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/AllianceMessage" },
+      "description": "Family Alliance messages scoped to the user."
+    },
+    "/users/{userId}/rules/{ruleId}": {
+      "schema": { "$ref": "#/entities/AllianceRule" },
+      "description": "Automatic cross-profile rules scoped to the user."
+    },
+    "/users/{userId}/alerts/{alertId}": {
+      "schema": { "$ref": "#/entities/PushAlert" },
+      "description": "Captured device and webhook alerts scoped to the user."
+    },
+    "/users/{userId}/webhooks/{webhookId}": {
+      "schema": { "$ref": "#/entities/PushWebhookEndpoint" },
+      "description": "User-registered external push webhook endpoints."
+    }
+  }
+}
