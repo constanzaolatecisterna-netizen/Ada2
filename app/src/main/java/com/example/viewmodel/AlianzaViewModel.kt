@@ -360,7 +360,7 @@ class AlianzaViewModel(
 
         triggerOrbCheck("WhatsApp entrante")
         val spoken = AdaRuntimeHub.formatWhatsAppSpokenText(alert.text)
-        reply(spoken, speak = true, autoListen = false, recordTurn = false)
+        reply(spoken, speak = true, autoListen = false, recordTurn = false, interrupt = false)
     }
 
     private fun <T> Flow<T>.safeCatch(tag: String): Flow<T> = catch { e ->
@@ -421,7 +421,7 @@ class AlianzaViewModel(
                         if (firedReminders.add(stamp)) {
                             val msg = "Recordatorio de las ${rem.time}: ${rem.text}"
                             ReminderNotifier.showReminderNotification(getApplication(), rem.time, rem.text)
-                            reply(msg, speak = true, mode = OrbVisualMode.ALERT)
+                            reply(msg, speak = true, mode = OrbVisualMode.ALERT, interrupt = false)
                         }
                     }
             }
@@ -509,6 +509,7 @@ class AlianzaViewModel(
         mode: OrbVisualMode? = null,
         autoListen: Boolean = false,
         recordTurn: Boolean = true,
+        interrupt: Boolean = true,
     ) {
         val prof = currentProfile()
         updateLocal { cur ->
@@ -533,7 +534,12 @@ class AlianzaViewModel(
 
         if (speak && prof?.availabilityStatus != AvailabilityStatus.EN_SILENCIO) {
             val shouldAutoListen = autoListen && _localState.value.fluidMode && !_localState.value.wakeWordEnabled
-            AdaVoiceCoordinator.speak(getApplication(), text, autoListenAfter = shouldAutoListen)
+            AdaVoiceCoordinator.speak(
+                getApplication(),
+                text,
+                autoListenAfter = shouldAutoListen,
+                interrupt = interrupt,
+            )
         } else if (mode == null) {
             updateLocal { cur ->
                 cur.copy(orbMode = if (cur.calmRunning) OrbVisualMode.CALM else OrbVisualMode.IDLE)

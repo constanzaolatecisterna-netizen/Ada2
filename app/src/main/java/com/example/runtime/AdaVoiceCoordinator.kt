@@ -119,7 +119,8 @@ object AdaVoiceCoordinator {
             voiceController = VoiceController(
                 context = appCtx,
                 onSpeechStarted = {
-                    wakeWordMonitor?.suppressForEcho(6_000L)
+                    wakeWordMonitor?.pauseTemporarily()
+                    wakeWordMonitor?.suppressForEcho(60_000L)
                     scope.launch {
                         updateState(appCtx) {
                             it.copy(
@@ -138,13 +139,13 @@ object AdaVoiceCoordinator {
                     }
                 },
                 onSpeechFinished = { autoListen ->
-                    wakeWordMonitor?.suppressForEcho(1_600L)
+                    wakeWordMonitor?.suppressForEcho(1_800L)
                     scope.launch {
                         updateState(appCtx) { it.copy(isSpeaking = false) }
                         if (autoListen) {
                             scheduleFollowUpListen(appCtx)
                         } else {
-                            scheduleWakeWordResume(appCtx, delayMs = 1_650L)
+                            scheduleWakeWordResume(appCtx, delayMs = 1_800L)
                         }
                     }
                 },
@@ -182,7 +183,9 @@ object AdaVoiceCoordinator {
                         if (!errorMessage.isNullOrBlank()) {
                             delegate?.onVoiceError(errorMessage)
                         }
-                        scheduleWakeWordResume(appCtx, delayMs = 1_400L)
+                        if (voiceController?.isSpeakingNow != true && !_voiceState.value.isSpeaking) {
+                            scheduleWakeWordResume(appCtx, delayMs = 1_500L)
+                        }
                     }
                 },
             )
@@ -293,7 +296,8 @@ object AdaVoiceCoordinator {
         updateState(context) { it.copy(wakeWordArmed = false, errorText = null) }
         if (wasMonitorActive) {
             scope.launch {
-                delay(140L)
+                wakeWordMonitor?.awaitStopped(350L)
+                delay(80L)
                 vc.startListening(isWakeCheck = false)
             }
         } else {
@@ -301,25 +305,41 @@ object AdaVoiceCoordinator {
         }
     }
 
-    fun speak(context: Context, text: String, autoListenAfter: Boolean = false) {
+    fun speak(
+        context: Context,
+        text: String,
+        autoListenAfter: Boolean = false,
+        interrupt: Boolean = true,
+    ) {
         ensureInitialized(context)
         val clean = text.trim()
         if (clean.isEmpty()) return
-        wakeWordMonitor?.suppressForEcho(6_000L)
-        updateState(context) { it.copy(responseText = clean) }
         if (delegate?.isSilenceMode() == true) {
+            updateState(context) { it.copy(responseText = clean) }
             return
         }
-        voiceController?.speak(clean, autoListenAfter = autoListenAfter)
+        autoListenJob?.cancel()
+        wakeResumeJob?.cancel()
+        wakeWordMonitor?.pauseTemporarily()
+        wakeWordMonitor?.suppressForEcho(60_000L)
+        updateState(context) {
+            it.copy(
+                responseText = clean,
+                isSpeaking = true,
+                wakeWordArmed = false,
+            )
+        }
+        voiceController?.speak(clean, autoListenAfter = autoListenAfter, interrupt = interrupt)
     }
 
     fun stopSpeech(context: Context) {
         ensureInitialized(context)
         autoListenJob?.cancel()
+        wakeResumeJob?.cancel()
         voiceController?.stopSpeech()
-        wakeWordMonitor?.suppressForEcho(1_600L)
+        wakeWordMonitor?.suppressForEcho(1_800L)
         updateState(context) { it.copy(isSpeaking = false) }
-        scheduleWakeWordResume(context, delayMs = 1_650L)
+        scheduleWakeWordResume(context, delayMs = 1_800L)
     }
 
     fun enrollVoicePrint(context: Context, profile: FamilyProfile) {
@@ -395,17 +415,18 @@ object AdaVoiceCoordinator {
             return
         }
         val echoElapsed = System.currentTimeMillis() - vc.lastSpeechEndedAtMs
-        if (vc.isSpeakingNow || echoElapsed < 1_600L) {
-            scheduleWakeWordResume(context, delayMs = 1_000L)
+        if (vc.isSpeakingNow || echoElapsed < 1_800L) {
+            scheduleWakeWordResume(context, delayMs = 1_200L)
             return
         }
         pendingAudioSample = pcmWindow
         pendingWakeVerification = true
         updateState(context) { it.copy(wakeWordArmed = false) }
         scope.launch {
-            delay(130L)
+            wakeWordMonitor?.awaitStopped(400L)
+            delay(120L)
             val now = _voiceState.value
-            if (now.wakeWordEnabled && !now.isSpeaking && !now.isThinking && !now.isListening) {
+            if (now.wakeWordEnabled && !now.isSpeaking && !vc.isSpeakingNow && !now.isThinking && !now.isListening) {
                 vc.startListening(isWakeCheck = true)
             }
         }
@@ -635,12 +656,13 @@ object AdaVoiceCoordinator {
         autoListenJob?.cancel()
         wakeResumeJob?.cancel()
         val vc = voiceController ?: return
+        wakeWordMonitor?.pauseTemporarily()
         autoListenJob = scope.launch {
-            // Brief echo guard after short "Te escucho" prompt so mic doesn't hear ADA's own TTS
+            wakeWordMonitor?.awaitStopped(350L)
+            // Brief echo guard after short prompt so mic doesn't hear ADA's own TTS
             delay(950L)
             val now = _voiceState.value
-            if (!now.isSpeaking && !now.isListening && !now.isThinking && now.enrollingProfileId == null) {
-                wakeWordMonitor?.pauseTemporarily()
+            if (!now.isSpeaking && !vc.isSpeakingNow && !now.isListening && !now.isThinking && now.enrollingProfileId == null) {
                 pendingWakeVerification = false
                 pendingAudioSample = null
                 vc.startListening(isWakeCheck = false)
@@ -648,16 +670,16 @@ object AdaVoiceCoordinator {
         }
     }
 
-    private fun scheduleWakeWordResume(context: Context, delayMs: Long = 1_600L) {
+    private fun scheduleWakeWordResume(context: Context, delayMs: Long = 1_800L) {
         wakeResumeJob?.cancel()
         val state = _voiceState.value
-        if (!state.wakeWordEnabled || state.isListening || state.isSpeaking || state.enrollingProfileId != null) {
+        if (!state.wakeWordEnabled || state.isListening || state.isSpeaking || voiceController?.isSpeakingNow == true || state.enrollingProfileId != null) {
             return
         }
         wakeResumeJob = scope.launch {
             delay(delayMs)
             val now = _voiceState.value
-            if (now.wakeWordEnabled && !now.isListening && !now.isSpeaking && !now.isThinking && now.enrollingProfileId == null) {
+            if (now.wakeWordEnabled && !now.isListening && !now.isSpeaking && voiceController?.isSpeakingNow != true && !now.isThinking && now.enrollingProfileId == null) {
                 wakeWordMonitor?.setNoiseFilterMode(now.noiseFilterMode)
                 wakeWordMonitor?.start()
                 updateState(context) { it.copy(wakeWordArmed = true) }

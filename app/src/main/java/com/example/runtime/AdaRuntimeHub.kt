@@ -116,7 +116,12 @@ object AdaRuntimeHub {
             _actions.tryEmit(AdaExternalAction.IncomingWhatsAppAlert(alert))
         } else {
             val spoken = formatWhatsAppSpokenText(alert.text)
-            AdaVoiceCoordinator.speak(context.applicationContext, spoken, autoListenAfter = false)
+            AdaVoiceCoordinator.speak(
+                context.applicationContext,
+                spoken,
+                autoListenAfter = false,
+                interrupt = false,
+            )
         }
     }
 
@@ -228,7 +233,12 @@ object AdaRuntimeHub {
             }
             is AdaExternalAction.IncomingWhatsAppAlert -> {
                 val spoken = formatWhatsAppSpokenText(action.alert.text)
-                AdaVoiceCoordinator.speak(context, spoken, autoListenAfter = false)
+                AdaVoiceCoordinator.speak(
+                    context,
+                    spoken,
+                    autoListenAfter = false,
+                    interrupt = false,
+                )
             }
         }
     }

@@ -13,6 +13,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.max
 
 /**
@@ -53,7 +54,17 @@ class WakeWordMonitor(
 
     fun pauseTemporarily() {
         isPausedForRecognizer = true
-        stopInternal()
+        monitorJob?.cancel()
+    }
+
+    suspend fun awaitStopped(timeoutMs: Long = 450L) {
+        val job = monitorJob ?: return
+        withTimeoutOrNull(timeoutMs) {
+            job.join()
+        }
+        if (monitorJob === job && !job.isActive) {
+            monitorJob = null
+        }
     }
 
     fun start() {
@@ -181,6 +192,10 @@ class WakeWordMonitor(
 
                     val cooldownElapsed = now - lastTriggerAtMs >= 2600L
                     if (activeSpeechFrames >= mode.minSpeechFrames && cooldownElapsed) {
+                        if (isPausedForRecognizer || !isActive || now < suppressUntilMs) {
+                            activeSpeechFrames = 0
+                            continue
+                        }
                         lastTriggerAtMs = now
                         activeSpeechFrames = 0
                         val snapshot = extractRingSnapshot(ringBuffer, ringWriteIdx, ringFilled, ringCapacity)
